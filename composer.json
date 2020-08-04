@@ -1,0 +1,11 @@
+{
+    "name": "carlosafonso/plotta",
+    "type": "library",
+    "minimum-stability": "dev",
+    "require": {},
+    "autoload": {
+    	"psr-4": {
+    		"Afonso\\Plotta\\": "src/"
+    	}
+    }
+}
