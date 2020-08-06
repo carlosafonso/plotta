@@ -41,6 +41,12 @@ class PlotBuilder
         return $this;
     }
 
+    public function withYAxis(array $yAxisConfig): PlotBuilder
+    {
+        $this->yAxisConfig = $yAxisConfig;
+        return $this;
+    }
+
     public function withData(array $data): PlotBuilder
     {
         $this->data[] = $data;
@@ -153,7 +159,7 @@ class PlotBuilder
             'y' => self::PLOT_MARGIN + imagefontheight(self::TITLE_FONT_SIZE) + self::INTER_ELEMENT_SPACING
         ];
         $coords['y_axis_bottom_right'] = [
-            'x' => self::PLOT_MARGIN + 50,
+            'x' => self::PLOT_MARGIN + 75,
             'y' => $this->height - self::PLOT_MARGIN
         ];
         $coords['chart_area_top_left'] = [
@@ -199,11 +205,23 @@ class PlotBuilder
             imagestring(
                 $img,
                 self::AXIS_VALUE_FONT_SIZE,
-                $coords['y_axis_top_left']['x'],
+                $coords['y_axis_bottom_right']['x'] - imagefontwidth(self::AXIS_VALUE_FONT_SIZE) * strlen($label) - self::INTER_ELEMENT_SPACING,
                 $y - $valueYOffset,
                 $label,
                 imagecolorallocate($img, 0x00, 0x00, 0x00)
             );
         }
+
+        // Name
+        imagestringup(
+            $img,
+            self::AXIS_VALUE_FONT_SIZE,
+            $coords['y_axis_top_left']['x'],
+            $coords['y_axis_top_left']['y']
+                + ($coords['y_axis_bottom_right']['y'] - $coords['y_axis_top_left']['y']) / 2
+                + (imagefontwidth(self::AXIS_VALUE_FONT_SIZE) * strlen($this->yAxisConfig['name'])) / 2,
+            $this->yAxisConfig['name'],
+            imagecolorallocate($img, 0x00, 0x00, 0x00)
+        );
     }
 }
