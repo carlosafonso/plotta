@@ -6,9 +6,13 @@ class PlotBuilder
 {
     const PLOT_MARGIN = 10;
 
-    const FONT_SIZE = 5;
+    const TITLE_FONT_SIZE = 5;
+
+    const AXIS_VALUE_FONT_SIZE = 2;
 
     const INTER_ELEMENT_SPACING = 10;
+
+    const N_TICKS_Y_AXIS = 10;
 
     const COLORS = [
         [0x00, 0x00, 0xff],
@@ -66,22 +70,17 @@ class PlotBuilder
         // Title
         imagestring(
             $img,
-            self::FONT_SIZE,
+            self::TITLE_FONT_SIZE,
             $coords['title_top_left']['x'],
             $coords['title_top_left']['y'],
             $this->title,
             imagecolorallocate($img, 0x00, 0x00, 0x00)
         );
 
-        // Axes
-        imageline(
-            $img,
-            $coords['chart_area_top_left']['x'],
-            $coords['chart_area_top_left']['y'],
-            $coords['chart_area_top_left']['x'],
-            $coords['chart_area_bottom_right']['y'],
-            imagecolorallocate($img, 0x00, 0x00, 0x00)
-        );
+        // Y Axis
+        $this->drawYAxis($img, $coords, $minValue, $maxValue);
+
+        // X Axis
         imageline(
             $img,
             $coords['chart_area_top_left']['x'],
@@ -143,19 +142,68 @@ class PlotBuilder
 
     private function calculateCoordinates(): array
     {
-        return [
-            'title_top_left' => [
-                'x' => $this->width / 2 - imagefontwidth(self::FONT_SIZE) * strlen($this->title) / 2,
-                'y' => self::PLOT_MARGIN
-            ],
-            'chart_area_top_left' => [
-                'x' => self::PLOT_MARGIN,
-                'y' => self::PLOT_MARGIN + imagefontheight(self::FONT_SIZE) + self::INTER_ELEMENT_SPACING
-            ],
-            'chart_area_bottom_right' => [
-                'x' => $this->width - self::PLOT_MARGIN,
-                'y' => $this->height - self::PLOT_MARGIN
-            ]
+        $coords = [];
+
+        $coords['title_top_left'] = [
+            'x' => $this->width / 2 - imagefontwidth(self::TITLE_FONT_SIZE) * strlen($this->title) / 2,
+            'y' => self::PLOT_MARGIN
         ];
+        $coords['y_axis_top_left'] = [
+            'x' => self::PLOT_MARGIN,
+            'y' => self::PLOT_MARGIN + imagefontheight(self::TITLE_FONT_SIZE) + self::INTER_ELEMENT_SPACING
+        ];
+        $coords['y_axis_bottom_right'] = [
+            'x' => self::PLOT_MARGIN + 50,
+            'y' => $this->height - self::PLOT_MARGIN
+        ];
+        $coords['chart_area_top_left'] = [
+            'x' => $coords['y_axis_bottom_right']['x'],
+            'y' => $coords['y_axis_top_left']['y']
+        ];
+        $coords['chart_area_bottom_right'] = [
+            'x' => $this->width - self::PLOT_MARGIN,
+            'y' => $this->height - self::PLOT_MARGIN
+        ];
+
+        return $coords;
+    }
+
+    private function drawYAxis(&$img, array $coords, float $minValue, float $maxValue): void
+    {
+        // Main Y axis line
+        imageline(
+            $img,
+            $coords['chart_area_top_left']['x'],
+            $coords['chart_area_top_left']['y'],
+            $coords['chart_area_top_left']['x'],
+            $coords['chart_area_bottom_right']['y'],
+            imagecolorallocate($img, 0x00, 0x00, 0x00)
+        );
+
+        // Ticks and values
+        $tickSpacing = ($coords['y_axis_bottom_right']['y'] - $coords['y_axis_top_left']['y']) / self::N_TICKS_Y_AXIS;
+        $valueInterval = ($maxValue - $minValue) / self::N_TICKS_Y_AXIS;
+        $valueYOffset = imagefontheight(self::AXIS_VALUE_FONT_SIZE) / 2;
+        for ($i = 0; $i < self::N_TICKS_Y_AXIS; $i++) {
+            $y = $coords['y_axis_top_left']['y'] + $i * $tickSpacing;
+            imageline(
+                $img,
+                $coords['y_axis_bottom_right']['x'] - 1,
+                $y,
+                $coords['y_axis_bottom_right']['x'] + 1,
+                $y,
+                imagecolorallocate($img, 0x00, 0x00, 0x00)
+            );
+
+            $label = $minValue + $i * $valueInterval;
+            imagestring(
+                $img,
+                self::AXIS_VALUE_FONT_SIZE,
+                $coords['y_axis_top_left']['x'],
+                $y - $valueYOffset,
+                $label,
+                imagecolorallocate($img, 0x00, 0x00, 0x00)
+            );
+        }
     }
 }
