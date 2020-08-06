@@ -5,6 +5,11 @@ namespace Afonso\Plotta;
 class PlotBuilder
 {
     const PLOT_MARGIN = 10;
+
+    const FONT_SIZE = 5;
+
+    const INTER_ELEMENT_SPACING = 10;
+
     const COLORS = [
         [0x00, 0x00, 0xff],
         [0xff, 0x00, 0x00],
@@ -15,12 +20,20 @@ class PlotBuilder
 
     private $height;
 
+    private $title;
+
     private $data = [];
 
     public function withDimensions(int $width, int $height): PlotBuilder
     {
         $this->width = $width;
         $this->height = $height;
+        return $this;
+    }
+
+    public function withTitle(string $title): PlotBuilder
+    {
+        $this->title = $title;
         return $this;
     }
 
@@ -37,6 +50,8 @@ class PlotBuilder
 
         [$minValue, $maxValue] = $this->getMinAndMaxValues($this->data);
 
+        $coords = $this->calculateCoordinates();
+
         $img = imagecreatetruecolor($this->width, $this->height);
         imageantialias($img, true);
 
@@ -48,27 +63,39 @@ class PlotBuilder
             imagecolorallocate($img, 0xff, 0xff, 0xff)
         );
 
+        // Title
+        imagestring(
+            $img,
+            self::FONT_SIZE,
+            $coords['title_top_left']['x'],
+            $coords['title_top_left']['y'],
+            $this->title,
+            imagecolorallocate($img, 0x00, 0x00, 0x00)
+        );
+
         // Axes
         imageline(
             $img,
-            self::PLOT_MARGIN,
-            self::PLOT_MARGIN,
-            self::PLOT_MARGIN,
-            $this->height - self::PLOT_MARGIN,
+            $coords['chart_area_top_left']['x'],
+            $coords['chart_area_top_left']['y'],
+            $coords['chart_area_top_left']['x'],
+            $coords['chart_area_bottom_right']['y'],
             imagecolorallocate($img, 0x00, 0x00, 0x00)
         );
         imageline(
             $img,
-            self::PLOT_MARGIN,
-            $this->height - self::PLOT_MARGIN,
-            $this->width - self::PLOT_MARGIN,
-            $this->height - self::PLOT_MARGIN,
+            $coords['chart_area_top_left']['x'],
+            $coords['chart_area_bottom_right']['y'],
+            $coords['chart_area_bottom_right']['x'],
+            $coords['chart_area_bottom_right']['y'],
             imagecolorallocate($img, 0x00, 0x00, 0x00)
         );
 
         // Data
-        $plotAreaTopY = self::PLOT_MARGIN;
-        $plotAreaBottomY = $this->height - self::PLOT_MARGIN;
+        $plotAreaTopY = $coords['chart_area_top_left']['y'];
+        $plotAreaBottomY = $coords['chart_area_bottom_right']['y'];
+        $nPoints = max(array_map('count', $this->data));
+        $segmentWidth = ($coords['chart_area_bottom_right']['x'] - $coords['chart_area_top_left']['x']) / ($nPoints - 1);
         foreach ($this->data as $idx => $series) {
             [$r, $g, $b] = self::COLORS[$idx % count(self::COLORS)];
             $lineColor = imagecolorallocate($img, $r, $g, $b);
@@ -77,10 +104,11 @@ class PlotBuilder
                 $fromValue = $series[$i - 1];
                 $toValue = $series[$i];
 
-                $fromX = self::PLOT_MARGIN + ($i - 1) / (count($series) - 1) * ($this->width - self::PLOT_MARGIN * 2);
+                $fromX = $coords['chart_area_top_left']['x'] + ($i - 1) * $segmentWidth;
                 $fromY = $this->interpolateYCoord($plotAreaTopY, $plotAreaBottomY, $fromValue, $maxValue, $minValue);
-                $toX = self::PLOT_MARGIN + ($i) / (count($series) - 1) * ($this->width - self::PLOT_MARGIN * 2);
+                $toX = $coords['chart_area_top_left']['x'] + $i * $segmentWidth;
                 $toY = $this->interpolateYCoord($plotAreaTopY, $plotAreaBottomY, $toValue, $maxValue, $minValue);
+
                 imageline($img, $fromX, $fromY, $toX, $toY, $lineColor);
             }
         }
@@ -111,5 +139,23 @@ class PlotBuilder
     ): int {
         $pct = 1 - ($value - $minValue) / ($maxValue - $minValue);
         return $areaTopY + ($areaBottomY - $areaTopY) * $pct;
+    }
+
+    private function calculateCoordinates(): array
+    {
+        return [
+            'title_top_left' => [
+                'x' => $this->width / 2 - imagefontwidth(self::FONT_SIZE) * strlen($this->title) / 2,
+                'y' => self::PLOT_MARGIN
+            ],
+            'chart_area_top_left' => [
+                'x' => self::PLOT_MARGIN,
+                'y' => self::PLOT_MARGIN + imagefontheight(self::FONT_SIZE) + self::INTER_ELEMENT_SPACING
+            ],
+            'chart_area_bottom_right' => [
+                'x' => $this->width - self::PLOT_MARGIN,
+                'y' => $this->height - self::PLOT_MARGIN
+            ]
+        ];
     }
 }
