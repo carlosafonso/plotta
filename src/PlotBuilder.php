@@ -20,16 +20,38 @@ class PlotBuilder
         [0x00, 0xff, 0x00],
     ];
 
+    /**
+     * @var int
+     */
     private $width;
 
+    /**
+     * @var int
+     */
     private $height;
 
+    /**
+     * @var string
+     */
     private $title;
 
+    /**
+     * @var \Afonso\Plotta\YAxisConfig
+     */
     private $yAxisConfig;
 
+    /**
+     * @var array
+     */
     private $data = [];
 
+    /**
+     * Set the dimensions of the chart, in pixels.
+     *
+     * @param int $width
+     * @param int $height
+     * @return self
+     */
     public function withDimensions(int $width, int $height): PlotBuilder
     {
         $this->width = $width;
@@ -37,88 +59,69 @@ class PlotBuilder
         return $this;
     }
 
+    /**
+     * Set the title of the chart.
+     *
+     * @param string $title
+     * @return self
+     */
     public function withTitle(string $title): PlotBuilder
     {
         $this->title = $title;
         return $this;
     }
 
+    /**
+     * Set the configuration of the Y axis.
+     *
+     * @param \Afonso\Plotta\YAxisConfig $yAxisConfig
+     * @return self
+     */
     public function withYAxis(YAxisConfig $yAxisConfig): PlotBuilder
     {
         $this->yAxisConfig = $yAxisConfig;
         return $this;
     }
 
+    /**
+     * Add a time series to the data to be plotted.
+     *
+     * @param array $data
+     * @return self
+     */
     public function withData(array $data): PlotBuilder
     {
         $this->data[] = $data;
         return $this;
     }
 
+    /**
+     * Generate the chart and save it as a PNG to the specified location.
+     *
+     * @param string $path
+     */
     public function render(string $path): void
     {
-        // Seed the PRNG so we always get the same color sequence
-        // srand(1);
-
+        // Determine the minimum and maximum values of the data series
         [$minValue, $maxValue] = $this->getMinAndMaxValues($this->data);
 
+        // Calculate the key coordinates for the chart components
         $coords = $this->calculateCoordinates();
 
-        $img = imagecreatetruecolor($this->width, $this->height);
-        imageantialias($img, true);
-
-        // Fill
-        imagefill(
-            $img,
-            0,
-            0,
-            imagecolorallocate($img, 0xff, 0xff, 0xff)
-        );
+        // Initialize chart
+        $img = $this->initChart($this->width, $this->height);
 
         // Title
-        imagestring(
-            $img,
-            self::TITLE_FONT_SIZE,
-            $coords['title_top_left']['x'],
-            $coords['title_top_left']['y'],
-            $this->title,
-            imagecolorallocate($img, 0x00, 0x00, 0x00)
-        );
+        $this->drawTitle($img, $coords, $this->title);
 
         // Y Axis
-        $this->drawYAxis($img, $coords, $minValue, $maxValue);
+        $this->drawYAxis($img, $coords, $this->yAxisConfig, $minValue, $maxValue);
 
         // X Axis
-        imageline(
-            $img,
-            $coords['chart_area_top_left']['x'],
-            $coords['chart_area_bottom_right']['y'],
-            $coords['chart_area_bottom_right']['x'],
-            $coords['chart_area_bottom_right']['y'],
-            imagecolorallocate($img, 0x00, 0x00, 0x00)
-        );
+        $this->drawXAxis($img, $coords);
 
         // Data
-        $plotAreaTopY = $coords['chart_area_top_left']['y'];
-        $plotAreaBottomY = $coords['chart_area_bottom_right']['y'];
-        $nPoints = max(array_map('count', $this->data));
-        $segmentWidth = ($coords['chart_area_bottom_right']['x'] - $coords['chart_area_top_left']['x']) / ($nPoints - 1);
-        foreach ($this->data as $idx => $series) {
-            [$r, $g, $b] = self::COLORS[$idx % count(self::COLORS)];
-            $lineColor = imagecolorallocate($img, $r, $g, $b);
-            // $lineColor = imagecolorallocate($img, rand(0, 255), rand(0, 255), rand(0, 255));
-            for ($i = 1; $i < count($series); $i++) {
-                $fromValue = $series[$i - 1];
-                $toValue = $series[$i];
-
-                $fromX = $coords['chart_area_top_left']['x'] + ($i - 1) * $segmentWidth;
-                $fromY = $this->interpolateYCoord($plotAreaTopY, $plotAreaBottomY, $fromValue, $maxValue, $minValue);
-                $toX = $coords['chart_area_top_left']['x'] + $i * $segmentWidth;
-                $toY = $this->interpolateYCoord($plotAreaTopY, $plotAreaBottomY, $toValue, $maxValue, $minValue);
-
-                imageline($img, $fromX, $fromY, $toX, $toY, $lineColor);
-            }
-        }
+        $this->drawData($img, $coords, $this->data, $minValue, $maxValue);
 
         // Write to file
         imagepng($img, $path);
@@ -176,7 +179,35 @@ class PlotBuilder
         return $coords;
     }
 
-    private function drawYAxis(&$img, array $coords, float $minValue, float $maxValue): void
+    private function initChart(int $width, int $height)
+    {
+        $img = imagecreatetruecolor($this->width, $this->height);
+        imageantialias($img, true);
+
+        // White background fill
+        imagefill(
+            $img,
+            0,
+            0,
+            imagecolorallocate($img, 0xff, 0xff, 0xff)
+        );
+
+        return $img;
+    }
+
+    private function drawTitle(&$img, array $coords, string $title): void
+    {
+        imagestring(
+            $img,
+            self::TITLE_FONT_SIZE,
+            $coords['title_top_left']['x'],
+            $coords['title_top_left']['y'],
+            $this->title,
+            imagecolorallocate($img, 0x00, 0x00, 0x00)
+        );
+    }
+
+    private function drawYAxis(&$img, array $coords, YAxisConfig $yAxisConfig, float $minValue, float $maxValue): void
     {
         // Main Y axis line
         imageline(
@@ -221,9 +252,44 @@ class PlotBuilder
             $coords['y_axis_top_left']['x'],
             $coords['y_axis_top_left']['y']
                 + ($coords['y_axis_bottom_right']['y'] - $coords['y_axis_top_left']['y']) / 2
-                + (imagefontwidth(self::AXIS_VALUE_FONT_SIZE) * strlen($this->yAxisConfig->name)) / 2,
-            $this->yAxisConfig->name,
+                + (imagefontwidth(self::AXIS_VALUE_FONT_SIZE) * strlen($yAxisConfig->name)) / 2,
+            $yAxisConfig->name,
             imagecolorallocate($img, 0x00, 0x00, 0x00)
         );
+    }
+
+    private function drawXAxis(&$img, array $coords): void
+    {
+        imageline(
+            $img,
+            $coords['chart_area_top_left']['x'],
+            $coords['chart_area_bottom_right']['y'],
+            $coords['chart_area_bottom_right']['x'],
+            $coords['chart_area_bottom_right']['y'],
+            imagecolorallocate($img, 0x00, 0x00, 0x00)
+        );
+    }
+
+    private function drawData(&$img, array $coords, array $data, int $minValue, int $maxValue): void
+    {
+        $plotAreaTopY = $coords['chart_area_top_left']['y'];
+        $plotAreaBottomY = $coords['chart_area_bottom_right']['y'];
+        $nPoints = max(array_map('count', $this->data));
+        $segmentWidth = ($coords['chart_area_bottom_right']['x'] - $coords['chart_area_top_left']['x']) / ($nPoints - 1);
+        foreach ($data as $idx => $series) {
+            [$r, $g, $b] = self::COLORS[$idx % count(self::COLORS)];
+            $lineColor = imagecolorallocate($img, $r, $g, $b);
+            for ($i = 1; $i < count($series); $i++) {
+                $fromValue = $series[$i - 1];
+                $toValue = $series[$i];
+
+                $fromX = $coords['chart_area_top_left']['x'] + ($i - 1) * $segmentWidth;
+                $fromY = $this->interpolateYCoord($plotAreaTopY, $plotAreaBottomY, $fromValue, $maxValue, $minValue);
+                $toX = $coords['chart_area_top_left']['x'] + $i * $segmentWidth;
+                $toY = $this->interpolateYCoord($plotAreaTopY, $plotAreaBottomY, $toValue, $maxValue, $minValue);
+
+                imageline($img, $fromX, $fromY, $toX, $toY, $lineColor);
+            }
+        }
     }
 }
