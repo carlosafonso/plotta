@@ -36,6 +36,11 @@ class PlotBuilder
     private $title;
 
     /**
+     * @var \Afonso\Plotta\XAxisConfig
+     */
+    private $xAxisConfig;
+
+    /**
      * @var \Afonso\Plotta\YAxisConfig
      */
     private $yAxisConfig;
@@ -68,6 +73,18 @@ class PlotBuilder
     public function withTitle(string $title): PlotBuilder
     {
         $this->title = $title;
+        return $this;
+    }
+
+    /**
+     * Set the configuration of the X axis.
+     *
+     * @param \Afonso\Plotta\XAxisConfig $xAxisConfig
+     * @return self
+     */
+    public function withXAxis(XAxisConfig $xAxisConfig): PlotBuilder
+    {
+        $this->xAxisConfig = $xAxisConfig;
         return $this;
     }
 
@@ -118,7 +135,7 @@ class PlotBuilder
         $this->drawYAxis($img, $coords, $this->yAxisConfig, $minValue, $maxValue);
 
         // X Axis
-        $this->drawXAxis($img, $coords);
+        $this->drawXAxis($img, $coords, $this->xAxisConfig);
 
         // Data
         $this->drawData($img, $coords, $this->data, $minValue, $maxValue);
@@ -165,15 +182,23 @@ class PlotBuilder
         ];
         $coords['y_axis_bottom_right'] = [
             'x' => self::PLOT_MARGIN + 75,
-            'y' => $this->height - self::PLOT_MARGIN
+            'y' => $this->height - self::PLOT_MARGIN - imagefontheight(self::AXIS_VALUE_FONT_SIZE) - self::INTER_ELEMENT_SPACING
+        ];
+        $coords['x_axis_top_left'] = [
+            'x' => $coords['y_axis_bottom_right']['x'],
+            'y' => $this->height - self::PLOT_MARGIN - imagefontheight(self::AXIS_VALUE_FONT_SIZE) - self::INTER_ELEMENT_SPACING,
+        ];
+        $coords['x_axis_bottom_right'] = [
+            'x' => $this->width - self::PLOT_MARGIN,
+            'y' => $this->height - self::PLOT_MARGIN,
         ];
         $coords['chart_area_top_left'] = [
             'x' => $coords['y_axis_bottom_right']['x'],
             'y' => $coords['y_axis_top_left']['y']
         ];
         $coords['chart_area_bottom_right'] = [
-            'x' => $this->width - self::PLOT_MARGIN,
-            'y' => $this->height - self::PLOT_MARGIN
+            'x' => $coords['x_axis_bottom_right']['x'],
+            'y' => $coords['x_axis_top_left']['y']
         ];
 
         return $coords;
@@ -258,14 +283,27 @@ class PlotBuilder
         );
     }
 
-    private function drawXAxis(&$img, array $coords): void
+    private function drawXAxis(&$img, array $coords, XAxisConfig $xAxisConfig): void
     {
+        // Main X axis line
         imageline(
             $img,
             $coords['chart_area_top_left']['x'],
             $coords['chart_area_bottom_right']['y'],
             $coords['chart_area_bottom_right']['x'],
             $coords['chart_area_bottom_right']['y'],
+            imagecolorallocate($img, 0x00, 0x00, 0x00)
+        );
+
+        // Name
+        imagestring(
+            $img,
+            self::AXIS_VALUE_FONT_SIZE,
+            $coords['x_axis_top_left']['x']
+                + ($coords['x_axis_bottom_right']['x'] - $coords['x_axis_top_left']['x']) / 2
+                - imagefontwidth(self::AXIS_VALUE_FONT_SIZE) * strlen($xAxisConfig->name) / 2,
+            $coords['x_axis_top_left']['y'] + self::INTER_ELEMENT_SPACING,
+            $xAxisConfig->name,
             imagecolorallocate($img, 0x00, 0x00, 0x00)
         );
     }
