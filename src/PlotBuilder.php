@@ -164,7 +164,7 @@ class PlotBuilder
         int $maxValue,
         int $minValue
     ): int {
-        $pct = 1 - ($value - $minValue) / ($maxValue - $minValue);
+        $pct = ($value - $minValue) / ($maxValue - $minValue);
         return $areaTopY + ($areaBottomY - $areaTopY) * $pct;
     }
 
