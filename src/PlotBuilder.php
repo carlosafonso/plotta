@@ -26,6 +26,8 @@ class PlotBuilder
 
     private $title;
 
+    private $yAxisConfig;
+
     private $data = [];
 
     public function withDimensions(int $width, int $height): PlotBuilder
@@ -41,7 +43,7 @@ class PlotBuilder
         return $this;
     }
 
-    public function withYAxis(array $yAxisConfig): PlotBuilder
+    public function withYAxis(YAxisConfig $yAxisConfig): PlotBuilder
     {
         $this->yAxisConfig = $yAxisConfig;
         return $this;
@@ -219,8 +221,8 @@ class PlotBuilder
             $coords['y_axis_top_left']['x'],
             $coords['y_axis_top_left']['y']
                 + ($coords['y_axis_bottom_right']['y'] - $coords['y_axis_top_left']['y']) / 2
-                + (imagefontwidth(self::AXIS_VALUE_FONT_SIZE) * strlen($this->yAxisConfig['name'])) / 2,
-            $this->yAxisConfig['name'],
+                + (imagefontwidth(self::AXIS_VALUE_FONT_SIZE) * strlen($this->yAxisConfig->name)) / 2,
+            $this->yAxisConfig->name,
             imagecolorallocate($img, 0x00, 0x00, 0x00)
         );
     }
