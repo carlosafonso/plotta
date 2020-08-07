@@ -2,6 +2,8 @@
 
 namespace Afonso\Plotta;
 
+use \RuntimeException;
+
 class PlotBuilder
 {
     const PLOT_MARGIN = 10;
@@ -119,6 +121,9 @@ class PlotBuilder
      */
     public function render(string $path): void
     {
+        // Check that everything is okay before proceeding
+        $this->checkOrFail();
+
         // Determine the minimum and maximum values of the data series
         [$minValue, $maxValue] = $this->getMinAndMaxValues($this->data);
 
@@ -142,6 +147,19 @@ class PlotBuilder
 
         // Write to file
         imagepng($img, $path);
+    }
+
+    private function checkOrFail(): void
+    {
+        // Check that the number of data points and labels are the same
+        $maxDataPoints = max(array_map('count', $this->data));
+        $minDataPoints = min(array_map('count', $this->data));
+        $nLabels = count($this->xAxisConfig->labels);
+        if ($maxDataPoints != $minDataPoints) {
+            throw new RuntimeException("Data series do not have the same number of items. Min: ${minDataPoints}, max: ${maxDataPoints}");
+        } elseif ($maxDataPoints != $nLabels) {
+            throw new RuntimeException("Number of X axis labels does not match the number of data items. Data points: ${maxDataPoints}, labels: ${nLabels}");
+        }
     }
 
     /**
