@@ -334,9 +334,26 @@ class PlotBuilder
             imagecolorallocate($img, 0x00, 0x00, 0x00)
         );
 
+        // ================
         // Ticks and labels
-        $nTicks = count($xAxisConfig->labels);
-        $tickSpacing = ($coords['x_axis_bottom_right']['x'] - $coords['x_axis_top_left']['x']) / ($nTicks - 1);
+        // ================
+        // The total amount of labels
+        $nLabels = count($xAxisConfig->labels);
+        // The total number of ticks and labels that we'll print. The higher
+        // the number of labels, the fewer of them we'll print so that we don't
+        // clutter the axis.
+        // Right now this is a function of the order of magnitude of the number
+        // of labels. From 1 to 9 elements, we skip none. From 10 to 100, we
+        // pick one every ten. From 101 to 1000, we pick one every one hundred,
+        // but this is clearly not ideal. We should probably factor in the
+        // chart's width, the length of the labels, etc.
+        $nTicks = floor($nLabels / (10 ** (floor(log10($nLabels)) - 1)));
+        // The number of ticks and labels we skip in between, so that all items
+        // that will be printed are evenly distributed across the axis.
+        $tickOffset = floor($nLabels / ($nTicks - 1));
+        // The space in pixels between each tick.
+        $tickSpacing = floor(($coords['x_axis_bottom_right']['x'] - $coords['x_axis_top_left']['x']) / ($nTicks - 1));
+
         for ($i = 0; $i < $nTicks; $i++) {
             $x = $coords['x_axis_top_left']['x'] + $i * $tickSpacing;
             imageline(
@@ -348,7 +365,7 @@ class PlotBuilder
                 imagecolorallocate($img, 0x00, 0x00, 0x00)
             );
 
-            $label = $xAxisConfig->labels[$i];
+            $label = $xAxisConfig->labels[$i * $tickOffset];
             imagestring(
                 $img,
                 self::AXIS_VALUE_FONT_SIZE,
