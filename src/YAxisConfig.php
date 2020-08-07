@@ -4,5 +4,20 @@ namespace Afonso\Plotta;
 
 class YAxisConfig extends AxisConfig
 {
-    // This class intentionally left blank.
+    /**
+     * @var float
+     */
+    public $min;
+
+    /**
+     * @var float
+     */
+    public $max;
+
+    public function __construct(string $name, float $min = null, float $max = null)
+    {
+        parent::__construct($name);
+        $this->min = $min;
+        $this->max = $max;
+    }
 }

@@ -125,7 +125,8 @@ class PlotBuilder
         $this->checkOrFail();
 
         // Determine the minimum and maximum values of the data series
-        [$minValue, $maxValue] = $this->getMinAndMaxValues($this->data);
+        $minValue = $this->yAxisConfig->min ?? $this->getMinValue($this->data);
+        $maxValue = $this->yAxisConfig->max ?? $this->getMaxValue($this->data);
 
         // Calculate the key coordinates for the chart components
         $coords = $this->calculateCoordinates();
@@ -170,9 +171,29 @@ class PlotBuilder
      */
     private function getMinAndMaxValues(array $series): array
     {
-        $min = min(array_map('min', $series));
-        $max = max(array_map('max', $series));
-        return [$min, $max];
+        return [$this->getMinValue($series), $this->getMaxValue($series)];
+    }
+
+    /**
+     * Return the min value across all data series.
+     *
+     * @param float[][] $series
+     * @return float
+     */
+    private function getMinValue(array $series): float
+    {
+        return min(array_map('min', $series));
+    }
+
+    /**
+     * Return the max values across all data series.
+     *
+     * @param float[][] $series
+     * @return float
+     */
+    private function getMaxValue(array $series): float
+    {
+        return max(array_map('max', $series));
     }
 
     private function interpolateYCoord(
