@@ -1,11 +1,18 @@
 {
     "name": "carlosafonso/plotta",
     "type": "library",
+    "description": "A simple chart generation and manipulation library",
+    "license": "MIT",
+    "authors": [{
+        "name": "Carlos Afonso"
+    }],
     "minimum-stability": "dev",
-    "require": {},
+    "require": {
+        "php": ">=7.3"
+    },
     "autoload": {
-    	"psr-4": {
-    		"Afonso\\Plotta\\": "src/"
-    	}
+        "psr-4": {
+            "Afonso\\Plotta\\": "src/"
+        }
     }
 }
