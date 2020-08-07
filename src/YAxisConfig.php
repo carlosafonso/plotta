@@ -2,12 +2,7 @@
 
 namespace Afonso\Plotta;
 
-class YAxisConfig
+class YAxisConfig extends AxisConfig
 {
-    public $name;
-
-    public function __construct(string $name)
-    {
-        $this->name = $name;
-    }
+    // This class intentionally left blank.
 }

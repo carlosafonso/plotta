@@ -2,12 +2,13 @@
 
 namespace Afonso\Plotta;
 
-class XAxisConfig
+class XAxisConfig extends AxisConfig
 {
-    public $name;
+    public $labels;
 
-    public function __construct(string $name)
+    public function __construct(string $name, array $labels)
     {
-        $this->name = $name;
+        parent::__construct($name);
+        $this->labels = $labels;
     }
 }

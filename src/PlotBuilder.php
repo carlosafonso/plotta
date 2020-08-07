@@ -182,11 +182,11 @@ class PlotBuilder
         ];
         $coords['y_axis_bottom_right'] = [
             'x' => self::PLOT_MARGIN + 75,
-            'y' => $this->height - self::PLOT_MARGIN - imagefontheight(self::AXIS_VALUE_FONT_SIZE) - self::INTER_ELEMENT_SPACING
+            'y' => $this->height - self::PLOT_MARGIN - (imagefontheight(self::AXIS_VALUE_FONT_SIZE) + self::INTER_ELEMENT_SPACING) * 2
         ];
         $coords['x_axis_top_left'] = [
             'x' => $coords['y_axis_bottom_right']['x'],
-            'y' => $this->height - self::PLOT_MARGIN - imagefontheight(self::AXIS_VALUE_FONT_SIZE) - self::INTER_ELEMENT_SPACING,
+            'y' => $coords['y_axis_bottom_right']['y']
         ];
         $coords['x_axis_bottom_right'] = [
             'x' => $this->width - self::PLOT_MARGIN,
@@ -295,6 +295,31 @@ class PlotBuilder
             imagecolorallocate($img, 0x00, 0x00, 0x00)
         );
 
+        // Ticks and labels
+        $nTicks = count($xAxisConfig->labels);
+        $tickSpacing = ($coords['x_axis_bottom_right']['x'] - $coords['x_axis_top_left']['x']) / ($nTicks - 1);
+        for ($i = 0; $i < $nTicks; $i++) {
+            $x = $coords['x_axis_top_left']['x'] + $i * $tickSpacing;
+            imageline(
+                $img,
+                $x,
+                $coords['x_axis_top_left']['y'] - 1,
+                $x,
+                $coords['x_axis_top_left']['y'] + 1,
+                imagecolorallocate($img, 0x00, 0x00, 0x00)
+            );
+
+            $label = $xAxisConfig->labels[$i];
+            imagestring(
+                $img,
+                self::AXIS_VALUE_FONT_SIZE,
+                $x - imagefontwidth(self::AXIS_VALUE_FONT_SIZE) * strlen($label) / 2,
+                $coords['x_axis_top_left']['y'] + self::INTER_ELEMENT_SPACING,
+                $label,
+                imagecolorallocate($img, 0x00, 0x00, 0x00)
+            );
+        }
+
         // Name
         imagestring(
             $img,
@@ -302,7 +327,7 @@ class PlotBuilder
             $coords['x_axis_top_left']['x']
                 + ($coords['x_axis_bottom_right']['x'] - $coords['x_axis_top_left']['x']) / 2
                 - imagefontwidth(self::AXIS_VALUE_FONT_SIZE) * strlen($xAxisConfig->name) / 2,
-            $coords['x_axis_top_left']['y'] + self::INTER_ELEMENT_SPACING,
+            $coords['x_axis_top_left']['y'] + imagefontheight(self::AXIS_VALUE_FONT_SIZE) + self::INTER_ELEMENT_SPACING * 2,
             $xAxisConfig->name,
             imagecolorallocate($img, 0x00, 0x00, 0x00)
         );
