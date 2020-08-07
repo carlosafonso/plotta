@@ -317,16 +317,24 @@ class PlotBuilder
         foreach ($data as $idx => $series) {
             [$r, $g, $b] = self::COLORS[$idx % count(self::COLORS)];
             $lineColor = imagecolorallocate($img, $r, $g, $b);
+
+            $fromX = $fromY = null;
             for ($i = 1; $i < count($series); $i++) {
                 $fromValue = $series[$i - 1];
                 $toValue = $series[$i];
 
-                $fromX = $coords['chart_area_top_left']['x'] + ($i - 1) * $segmentWidth;
-                $fromY = $this->interpolateYCoord($plotAreaTopY, $plotAreaBottomY, $fromValue, $maxValue, $minValue);
+                if ($fromX === null) {
+                    $fromX = $coords['chart_area_top_left']['x'] + ($i - 1) * $segmentWidth;
+                    $fromY = $this->interpolateYCoord($plotAreaTopY, $plotAreaBottomY, $fromValue, $maxValue, $minValue);
+                }
+
                 $toX = $coords['chart_area_top_left']['x'] + $i * $segmentWidth;
                 $toY = $this->interpolateYCoord($plotAreaTopY, $plotAreaBottomY, $toValue, $maxValue, $minValue);
 
                 imageline($img, $fromX, $fromY, $toX, $toY, $lineColor);
+
+                $fromX = $toX;
+                $fromY = $toY;
             }
         }
     }
