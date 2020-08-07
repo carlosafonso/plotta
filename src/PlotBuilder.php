@@ -365,7 +365,12 @@ class PlotBuilder
                 imagecolorallocate($img, 0x00, 0x00, 0x00)
             );
 
+            // If the X axis configuration specifies a date format, apply it.
+            // Otherwise use the label as-is.
             $label = $xAxisConfig->labels[$i * $tickOffset];
+            if ($xAxisConfig->dateFormat !== null) {
+                $label = date($xAxisConfig->dateFormat, $label);
+            }
             imagestring(
                 $img,
                 self::AXIS_VALUE_FONT_SIZE,
