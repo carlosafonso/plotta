@@ -170,9 +170,9 @@ class PlotBuilder
      */
     private function getMinAndMaxValues(array $series): array
     {
-        $max = max(array_map('max', $series));
         $min = min(array_map('min', $series));
-        return [$max, $min];
+        $max = max(array_map('max', $series));
+        return [$min, $max];
     }
 
     private function interpolateYCoord(
@@ -182,7 +182,7 @@ class PlotBuilder
         int $maxValue,
         int $minValue
     ): int {
-        $pct = ($value - $minValue) / ($maxValue - $minValue);
+        $pct = 1 - ($value - $minValue) / ($maxValue - $minValue);
         return $areaTopY + ($areaBottomY - $areaTopY) * $pct;
     }
 
@@ -277,7 +277,7 @@ class PlotBuilder
                 imagecolorallocate($img, 0x00, 0x00, 0x00)
             );
 
-            $label = $minValue + $i * $valueInterval;
+            $label = $maxValue - $i * $valueInterval;
             imagestring(
                 $img,
                 self::AXIS_VALUE_FONT_SIZE,
